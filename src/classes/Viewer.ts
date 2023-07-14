@@ -64,7 +64,7 @@ export class Viewer {
 
     const helper = new THREE.CameraHelper(light.shadow.camera);
     this.scene.add(light);
-    this.scene.add(helper);
+    //this.scene.add(helper);
 
     this.scene.add(ambient);
   }
@@ -89,21 +89,28 @@ export class Viewer {
     }
 
     const loader = new GLTFLoader();
+    const textureLoader = new THREE.TextureLoader();
 
     const frame = await loader.loadAsync('./assets/frame.glb');
     this.updateGLTFSceneMaterials(frame.scene, THREE.FrontSide);
     this.scene.add(frame.scene);
 
     const roomA = await loader.loadAsync('./assets/roomA.glb');
-    this.updateGLTFSceneMaterials(roomA.scene, THREE.FrontSide, 1);
+    const roomALightmap = await textureLoader.loadAsync('./assets/roomA_complete.png');
+    roomALightmap.flipY = false;
+    this.updateGLTFSceneMaterials(roomA.scene, THREE.FrontSide, 1, roomALightmap);
     this.scene.add(roomA.scene);
 
     const roomB = await loader.loadAsync('./assets/roomB.glb');
-    this.updateGLTFSceneMaterials(roomB.scene, THREE.FrontSide, 4);
+    const roomBLightmap = await textureLoader.loadAsync('./assets/roomB_complete.png');
+    roomBLightmap.flipY = false;
+    this.updateGLTFSceneMaterials(roomB.scene, THREE.FrontSide, 4, roomBLightmap);
     this.scene.add(roomB.scene);
 
     const roomC = await loader.loadAsync('./assets/roomC.glb');
-    this.updateGLTFSceneMaterials(roomC.scene, THREE.FrontSide, 2);
+    const roomCLightmap = await textureLoader.loadAsync('./assets/roomC_complete.png');
+    roomCLightmap.flipY = false;
+    this.updateGLTFSceneMaterials(roomC.scene, THREE.FrontSide, 2, roomCLightmap);
     this.scene.add(roomC.scene);
 
     const floor = new THREE.Mesh(
@@ -149,13 +156,18 @@ export class Viewer {
         */
   }
 
-  private updateGLTFSceneMaterials(scene: THREE.Group, side: THREE.Side, stencilRef?: number) {
+  private updateGLTFSceneMaterials(scene: THREE.Group, side: THREE.Side, stencilRef?: number, texture?: THREE.Texture) {
     scene.traverse(child => {
       if (!(child instanceof THREE.Mesh)) {
         return;
       }
 
-      const material = child.material as THREE.Material;
+      let material = child.material as THREE.Material;
+      if (texture) {
+        texture.encoding = THREE.sRGBEncoding;
+        material = new THREE.MeshBasicMaterial({ lightMap: texture, lightMapIntensity: 2.2 });
+        child.material = material;
+      }
 
       if (stencilRef) {
         material.stencilFunc = THREE.EqualStencilFunc;
